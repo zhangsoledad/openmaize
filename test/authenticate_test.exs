@@ -3,25 +3,30 @@ defmodule Openmaize.AuthenticateTest do
   use Plug.Test
 
   import Openmaize.Token.Create
-  alias Openmaize.Authenticate
+  alias Openmaize.{Authenticate,TestRepo,User}
 
   setup_all do
-    {:ok, user_token} = %{id: 1, username: "Raymond Luxury Yacht", role: "user"}
-    |> generate_token(:username, {0, 86400})
+    user_map = %{username: "Raymond Luxury Yacht", role: "user", email: "raymond@mail.com"}
+    user = case TestRepo.get_by(User, email: "raymond@mail.com") do
+      nil  ->
+        {:ok, user} =  %User{} |> User.changeset(user_map) |> TestRepo.insert
+        user
+      user ->
+        user
+    end
 
-    {:ok, exp_token} = %{id: 1, username: "Raymond Luxury Yacht", role: "user"}
-    |> generate_token(:username, {0, 0})
+    {:ok, user_token} =  user |> generate_token(:username, {0, 86400})
 
-    {:ok, nbf_token} = %{id: 1, username: "Raymond Luxury Yacht", role: "user"}
-    |> generate_token(:username, {10, 10})
+    {:ok, exp_token} = user |> generate_token(:username, {0, 0})
+
+    {:ok, nbf_token} = user |> generate_token(:username, {10, 10})
 
     Application.put_env(:openmaize, :token_alg, :sha256)
-    {:ok, user_256_token} = %{id: 1, username: "Raymond Luxury Yacht", role: "user"}
-    |> generate_token(:username, {0, 86400})
+    {:ok, user_256_token} = user |> generate_token(:username, {0, 86400})
     Application.delete_env(:openmaize, :token_alg)
 
     {:ok, %{user_token: user_token, exp_token: exp_token,
-            nbf_token: nbf_token, user_256_token: user_256_token}}
+            nbf_token: nbf_token, user_256_token: user_256_token, user: user}}
   end
 
   def call(url, token, :cookie) do
@@ -47,9 +52,9 @@ defmodule Openmaize.AuthenticateTest do
     assert conn.assigns ==  %{current_user: nil}
   end
 
-  test "correct token stored in cookie", %{user_token: user_token} do
+  test "correct token stored in cookie with repo config", %{user_token: user_token, user: user} do
     conn = call("/", user_token, :cookie)
-    %{id: 1, role: "user", username: "Raymond Luxury Yacht"} = conn.assigns.current_user
+    assert user == conn.assigns.current_user
   end
 
   test "invalid token stored in cookie", %{user_token: user_token} do
@@ -57,9 +62,9 @@ defmodule Openmaize.AuthenticateTest do
     assert conn.assigns ==  %{current_user: nil}
   end
 
-  test "correct token stored in sessionStorage", %{user_token: user_token} do
+  test "correct token stored in sessionStorage with repo config", %{user_token: user_token, user: user} do
     conn = call("/", user_token, nil)
-    %{id: 1, role: "user", username: "Raymond Luxury Yacht"} = conn.assigns.current_user
+    assert user == conn.assigns.current_user
   end
 
   test "invalid token stored in sessionStorage", %{user_token: user_token} do
@@ -72,9 +77,9 @@ defmodule Openmaize.AuthenticateTest do
     assert conn.assigns == %{current_user: nil}
   end
 
-  test "correct token using sha256", %{user_256_token: user_256_token} do
+  test "correct token using sha256 with repo config", %{user_256_token: user_256_token, user: user} do
     conn = call("/", user_256_token, :cookie)
-    %{id: 1, role: "user", username: "Raymond Luxury Yacht"} = conn.assigns.current_user
+    assert user == conn.assigns.current_user
   end
 
   test "invalid token using sha256", %{user_256_token: user_256_token} do

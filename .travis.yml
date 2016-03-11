@@ -1,0 +1,32 @@
+language: elixir
+
+env:
+  - POSTGRES_PASS=dev
+
+elixir:
+  - 1.2.0
+otp_release:
+  - 18.2.1
+
+addons:
+  postgresql: "9.4"
+
+services:
+  - postgresql
+
+cache:
+  directories:
+    - _build
+    - deps
+
+sudo: false
+
+before_script:
+  - psql -c "CREATE USER \"dev\" WITH SUPERUSER CREATEDB PASSWORD 'dev';" -U postgres
+  - psql -c "create database \"openmaize_test\" WITH OWNER=\"dev\";" -U postgres
+  - mix local.hex --force
+  - mix local.rebar
+  - mix deps.get --only test
+
+script:
+  - mix test
