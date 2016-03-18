@@ -29,8 +29,8 @@ defmodule Openmaize.Mixfile do
       {:plug, "~> 1.1"},
       {:comeonin, "~> 2.1"},
       {:poison, ">= 1.5.0"},
-      {:ecto, "~> 1.1", optional: true},
-      {:postgrex, "~> 0.11", optional: true},
+      {:ecto, "~> 2.0.0-beta", optional: true},
+      {:postgrex, ">= 0.0.1", optional: true},
       {:not_qwerty123, "~> 1.1", optional: true},
       {:earmark, "~> 0.2", only: :dev},
       {:ex_doc,  "~> 0.11", only: :dev}
